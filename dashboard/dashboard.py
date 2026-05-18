@@ -4,6 +4,7 @@ import seaborn as sns
 import streamlit as st
 from babel.numbers import format_currency
 sns.set_theme(style='dark')
+from pathlib import Path
 
 def create_orders_reviews_merged_df(df):
     df['order_delivered_customer_date'] = pd.to_datetime(
@@ -63,10 +64,14 @@ def create_customer_cities_df(df):
 
     return top10_customer_cities
 
-orders_payments_merged_df = pd.read_csv('../data/orders_payments_merged_df.csv')
-orders_reviews_merged_df = pd.read_csv('../data/orders_reviews_merged_df.csv')
-products_reviews_df = pd.read_csv('../data/products_reviews_df.csv')
-customer_df = pd.read_csv('../data/olist_customers_dataset.csv')
+BASE_DIR = Path(__file__).resolve().parent
+
+DATA_DIR = BASE_DIR.parent / "data"
+
+orders_payments_merged_df = pd.read_csv(DATA_DIR / "orders_payments_merged_df.csv")
+orders_reviews_merged_df = pd.read_csv(DATA_DIR / "orders_reviews_merged_df.csv")
+products_reviews_df = pd.read_csv(DATA_DIR / "products_reviews_df.csv")
+customer_df = pd.read_csv(DATA_DIR / "olist_customers_dataset.csv")
 
 orders_reviews_relation =create_orders_reviews_merged_df(orders_reviews_merged_df)
 product_reviews_top10 = create_products_reviews_top10_df(products_reviews_df)
