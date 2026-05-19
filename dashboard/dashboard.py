@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 from babel.numbers import format_currency
+import numpy as np
 sns.set_theme(style='dark')
 from pathlib import Path
 
@@ -125,20 +126,87 @@ def create_customer_cities_df(df):
 
     return top10_customer_cities
 
+def rfm_df(df):
+    # Temukan tanggal terbaru dalam DataFrame
+    latest_date = df['order_purchase_timestamp'].max()
+
+    # Hitung tanggal satu tahun sebelum tanggal terbaru
+    one_year_ago = latest_date - pd.DateOffset(years=1)
+
+    # Filter DataFrame untuk data 1 tahun terakhir
+    customer_order_payment_last_year_df = df[df['order_purchase_timestamp'] >= one_year_ago]
+
+    rfm_df = customer_order_payment_last_year_df.groupby(by="customer_unique_id", as_index=False).agg({
+        "order_purchase_timestamp": "max", # mengambil tanggal order terakhir
+        "order_id": "nunique", # menghitung jumlah order
+        "payment_value": "sum" # menghitung jumlah revenue yang dihasilkan
+    })
+    rfm_df.columns = ["customer_unique_id", "max_order_timestamp", "frequency", "monetary"]
+
+    # Calculate the most recent purchase timestamp in the entire dataset (as a full datetime object)
+    recent_overall_timestamp = df["order_purchase_timestamp"].dropna().max()
+
+    # Calculate recency in hours
+    # x here is a pandas Timestamp object (from rfm_df["max_order_timestamp"])
+    rfm_df["recency"] = rfm_df["max_order_timestamp"].apply(
+        lambda x: (recent_overall_timestamp - x).total_seconds() / 3600 if pd.notna(x) else np.nan
+    )
+
+    rfm_df.drop("max_order_timestamp", axis=1, inplace=True)
+
+    return rfm_df
+
 BASE_DIR = Path(__file__).resolve().parent
 
 DATA_DIR = BASE_DIR.parent / "data"
 LOGO_DIR = BASE_DIR.parent / "logo"
 
-all_df = pd.read_csv(DATA_DIR / "all_df.csv")
+customer_order_payment_df = pd.read_csv(DATA_DIR / "customer_order_payment_df.csv")
+orders_customers_df = pd.read_csv(DATA_DIR / "orders_customers_df.csv")
+orders_payments_merged_df = pd.read_csv(DATA_DIR / "orders_payments_merged_df.csv")
+orders_reviews_merged_df = pd.read_csv(DATA_DIR / "orders_reviews_merged_df.csv")
+products_reviews_df = pd.read_csv(DATA_DIR / "products_reviews_df.csv")
 
 # SIDEBAR DATE INPUT
-all_df["order_purchase_timestamp"] = pd.to_datetime(
-    all_df["order_purchase_timestamp"]
+# customer_order_payment_df filter
+customer_order_payment_df["order_purchase_timestamp"] = pd.to_datetime(
+    customer_order_payment_df["order_purchase_timestamp"]
 )
 
-min_date = all_df["order_purchase_timestamp"].min()
-max_date = all_df["order_purchase_timestamp"].max()
+min_date = customer_order_payment_df["order_purchase_timestamp"].min()
+max_date = customer_order_payment_df["order_purchase_timestamp"].max()
+
+# orders_customers_df filter
+orders_customers_df["order_purchase_timestamp"] = pd.to_datetime(
+    orders_customers_df["order_purchase_timestamp"]
+)
+
+min_date = orders_customers_df["order_purchase_timestamp"].min()
+max_date = orders_customers_df["order_purchase_timestamp"].max()
+
+# orders_payments_merged_df filter
+orders_payments_merged_df["order_purchase_timestamp"] = pd.to_datetime(
+    orders_payments_merged_df["order_purchase_timestamp"]
+)
+
+min_date = orders_payments_merged_df["order_purchase_timestamp"].min()
+max_date = orders_payments_merged_df["order_purchase_timestamp"].max()
+
+# orders_reviews_merged_df filter
+orders_reviews_merged_df["order_purchase_timestamp"] = pd.to_datetime(
+    orders_reviews_merged_df["order_purchase_timestamp"]
+)
+
+min_date = orders_reviews_merged_df["order_purchase_timestamp"].min()
+max_date = orders_reviews_merged_df["order_purchase_timestamp"].max()
+
+# products_reviews_df filter
+products_reviews_df["order_purchase_timestamp"] = pd.to_datetime(
+    products_reviews_df["order_purchase_timestamp"]
+)
+
+min_date = products_reviews_df["order_purchase_timestamp"].min()
+max_date = products_reviews_df["order_purchase_timestamp"].max()
 
 with st.sidebar:
     st.image(LOGO_DIR / "ecommerce_6220945.png")
@@ -150,15 +218,27 @@ with st.sidebar:
         value=[min_date, max_date]
     )
 
-main_df = all_df[(all_df["order_purchase_timestamp"] >= pd.Timestamp(start_date)) & 
-                (all_df["order_purchase_timestamp"] <= pd.Timestamp(end_date))]
+customer_order_payment_df_filtered = customer_order_payment_df[(customer_order_payment_df["order_purchase_timestamp"] >= pd.Timestamp(start_date)) & 
+                (customer_order_payment_df["order_purchase_timestamp"] <= pd.Timestamp(end_date))]
 
-orders_reviews_relation = create_orders_reviews_relation_df(main_df)
-product_reviews_top10 = create_products_reviews_top10_df(main_df)
-products_reviews_bottom10 = create_products_reviews_bottom10_df(main_df)
-last_year_order = create_last_year_order_df(main_df)
-top10_customer_states = create_customer_states_df(main_df)
-top10_customer_cities = create_customer_cities_df(main_df)
+orders_customers_df_filtered = orders_customers_df[(orders_customers_df["order_purchase_timestamp"] >= pd.Timestamp(start_date)) & 
+                (orders_customers_df["order_purchase_timestamp"] <= pd.Timestamp(end_date))]
+
+orders_payments_merged_df_filtered = orders_payments_merged_df[(orders_payments_merged_df["order_purchase_timestamp"] >= pd.Timestamp(start_date)) & 
+                (orders_payments_merged_df["order_purchase_timestamp"] <= pd.Timestamp(end_date))]
+
+orders_reviews_merged_df_filtered = orders_reviews_merged_df[(orders_reviews_merged_df["order_purchase_timestamp"] >= pd.Timestamp(start_date)) & 
+                (orders_reviews_merged_df["order_purchase_timestamp"] <= pd.Timestamp(end_date))]
+
+products_reviews_df_filtered = products_reviews_df[(products_reviews_df["order_purchase_timestamp"] >= pd.Timestamp(start_date)) & 
+                (products_reviews_df["order_purchase_timestamp"] <= pd.Timestamp(end_date))]
+
+orders_reviews_relation = create_orders_reviews_relation_df(orders_reviews_merged_df_filtered)
+product_reviews_top10 = create_products_reviews_top10_df(products_reviews_df_filtered)
+products_reviews_bottom10 = create_products_reviews_bottom10_df(products_reviews_df_filtered)
+last_year_order = create_last_year_order_df(orders_payments_merged_df_filtered)
+top10_customer_states = create_customer_states_df(orders_customers_df_filtered)
+top10_customer_cities = create_customer_cities_df(orders_customers_df_filtered)
 
 # MAIN VIEW
 
@@ -308,3 +388,30 @@ ax.tick_params(axis ='y', labelsize=12)
 plt.tight_layout()
 st.pyplot(fig)
 
+st.subheader('RFM Analysis')
+
+fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(10, 20))
+
+colors = ["#72BCD4",  "#72BCD4",  "#72BCD4",  "#72BCD4",  "#72BCD4"]
+
+sns.barplot(y="customer_unique_id", x="recency", data=rfm_df.sort_values(by="recency", ascending=True).head(10), palette=colors, ax=ax[0])
+ax[0].set_ylabel(None)
+ax[0].set_xlabel(None)
+ax[0].set_title("By Recency (hours)", loc="center", fontsize=18)
+ax[0].tick_params(axis ='x', labelsize=15)
+
+sns.barplot(y="customer_unique_id", x="frequency", data=rfm_df.sort_values(by="frequency", ascending=False).head(10), palette=colors, ax=ax[1])
+ax[1].set_ylabel(None)
+ax[1].set_xlabel(None)
+ax[1].set_title("By Frequency", loc="center", fontsize=18)
+ax[1].tick_params(axis='x', labelsize=15)
+
+sns.barplot(y="customer_unique_id", x="monetary", data=rfm_df.sort_values(by="monetary", ascending=False).head(10), palette=colors, ax=ax[2])
+ax[2].set_ylabel(None)
+ax[2].set_xlabel(None)
+ax[2].set_title("By Monetary", loc="center", fontsize=18)
+ax[2].tick_params(axis='x', labelsize=15)
+
+plt.suptitle("Best Customer Based on RFM Parameters", fontsize=20, y=0.95)
+plt.tight_layout()
+st.pyplot(fig)
