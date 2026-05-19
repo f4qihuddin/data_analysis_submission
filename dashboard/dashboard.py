@@ -50,7 +50,7 @@ def create_products_reviews_top10_df(df):
         "product_category_name": "most_purchased_product_category",
     }, inplace=True)
 
-    product_reviews_top10 = product_reviews_top10.sort_values(by='order_purchase_timestamp', ascending=False).head(12)
+    product_reviews_top10 = product_reviews_top10.sort_values(by='order_purchase_timestamp', ascending=False)
 
     total_top10_product_order = product_reviews_top10.groupby('most_purchased_product_category').total_order.sum().reset_index().sort_values(by='total_order', ascending=False)
     return total_top10_product_order
@@ -296,6 +296,8 @@ with col6:
     worst_product_total_orders = products_reviews_bottom10['total_order'][0]
     st.metric("Worst Product", value=worst_product)
     st.metric("Total Orders", value=worst_product_total_orders)
+
+st.dataframe(product_reviews_top10)
 
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(24, 6))
 
