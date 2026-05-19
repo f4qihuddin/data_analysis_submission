@@ -6,7 +6,7 @@ from babel.numbers import format_currency
 sns.set_theme(style='dark')
 from pathlib import Path
 
-def create_orders_reviews_merged_df(df):
+def create_orders_reviews_relation_df(df):
     df['order_delivered_customer_date'] = pd.to_datetime(
         df['order_delivered_customer_date']
     )
@@ -17,23 +17,66 @@ def create_orders_reviews_merged_df(df):
 
     df['delivery_time (days)'] = (df['order_delivered_customer_date'] - df['order_purchase_timestamp']).dt.days
 
-    orders_reviews_relation = df.groupby(by="review_score").agg({
-       "delivery_time (days)": 'mean'
-    }).reset_index().round(2)
+    orders_reviews_relation = df.resample(rule='ME', on='order_purchase_timestamp').agg({
+    "delivery_time (days)": 'mean',
+    "review_score": 'mean'
+    })
+
+    orders_reviews_relation.index = orders_reviews_relation.index.strftime('%Y-%m')
+    orders_reviews_relation = orders_reviews_relation.reset_index()
+    orders_reviews_relation.rename(columns={
+        "delivery_time (days)": "average_delivery_time (days)",
+        "review_score": "average_review_score"
+    }, inplace=True)
+    orders_reviews_relation = orders_reviews_relation.sort_values(by='order_purchase_timestamp', ascending=False).head(12)
 
     return orders_reviews_relation
 
 def create_products_reviews_top10_df(df):
-    product_reviews_top10 = df.groupby(by="product_category_name").review_score.mean().round(2).sort_values(ascending=False).reset_index().head(10)
+    df['order_month'] = df['order_purchase_timestamp'].dt.to_period('M')
 
-    return product_reviews_top10
+    monthly_category_counts = df.groupby(['order_month', 'product_category_name']).size().reset_index(name='total_order')
+
+    idx = monthly_category_counts.groupby('order_month')['total_order'].idxmax()
+
+    product_reviews_top10 = monthly_category_counts.loc[idx].copy()
+
+    product_reviews_top10['order_purchase_timestamp'] = product_reviews_top10['order_month'].dt.strftime('%Y-%m')
+
+    product_reviews_top10.drop(columns=['order_month'], inplace=True)
+
+    product_reviews_top10.rename(columns={
+        "product_category_name": "most_purchased_product_category",
+    }, inplace=True)
+
+    product_reviews_top10 = product_reviews_top10.sort_values(by='order_purchase_timestamp', ascending=False).head(12)
+
+    total_top10_product_order = product_reviews_top10.groupby('most_purchased_product_category').total_order.sum().reset_index().sort_values(by='total_order', ascending=False)
+    return total_top10_product_order
 
 def create_products_reviews_bottom10_df(df):
-    products_reviews_bottom10 = df.groupby(by="product_category_name").review_score.mean().round(2).sort_values(ascending=True).reset_index().head(10)
+    df['order_month'] = df['order_purchase_timestamp'].dt.to_period('M')
 
-    return products_reviews_bottom10
+    monthly_category_counts_bottom = df.groupby(['order_month', 'product_category_name']).size().reset_index(name='total_order')
 
-def create_orders_payments_merged_df(df):
+    idx_least = monthly_category_counts_bottom.groupby('order_month')['total_order'].idxmin()
+
+    product_reviews_bottom10 = monthly_category_counts_bottom.loc[idx_least].copy()
+
+    product_reviews_bottom10['order_purchase_timestamp'] = product_reviews_bottom10['order_month'].dt.strftime('%Y-%m')
+
+    product_reviews_bottom10.drop(columns=['order_month'], inplace=True)
+
+    product_reviews_bottom10.rename(columns={
+        "product_category_name": "less_purchased_product_category",
+    }, inplace=True)
+
+    product_reviews_bottom10 = product_reviews_bottom10.sort_values(by='order_purchase_timestamp', ascending=False).head(12)
+
+    total_bottom10_product_order = product_reviews_bottom10.groupby('less_purchased_product_category').total_order.sum().reset_index().sort_values(by='total_order', ascending=True)
+    return total_bottom10_product_order
+
+def create_last_year_order_df(df):
     df['order_purchase_timestamp'] = pd.to_datetime(
         df['order_purchase_timestamp']
     )
@@ -53,13 +96,31 @@ def create_orders_payments_merged_df(df):
     return last_year_order
 
 def create_customer_states_df(df):
-    top10_customer_states = df.groupby(by='customer_state').customer_unique_id.nunique().sort_values(ascending=False).reset_index().head(10)
+    # Temukan tanggal terbaru dalam DataFrame
+    latest_date = df['order_purchase_timestamp'].max()
+
+    # Hitung tanggal satu tahun sebelum tanggal terbaru
+    one_year_ago = latest_date - pd.DateOffset(years=1)
+
+    # Filter DataFrame untuk data 1 tahun terakhir
+    customer_order_last_year_df = df[df['order_purchase_timestamp'] >= one_year_ago]
+
+    top10_customer_states = customer_order_last_year_df.groupby(by='customer_state').customer_unique_id.nunique().sort_values(ascending=False).reset_index().head(10)
     top10_customer_states.rename(columns={'customer_unique_id': 'customer count'}, inplace=True)
 
     return top10_customer_states
 
 def create_customer_cities_df(df):
-    top10_customer_cities = df.groupby(by='customer_city').customer_unique_id.nunique().sort_values(ascending=False).reset_index().head(10)
+    # Temukan tanggal terbaru dalam DataFrame
+    latest_date = df['order_purchase_timestamp'].max()
+
+    # Hitung tanggal satu tahun sebelum tanggal terbaru
+    one_year_ago = latest_date - pd.DateOffset(years=1)
+
+    # Filter DataFrame untuk data 1 tahun terakhir
+    customer_order_last_year_df = df[df['order_purchase_timestamp'] >= one_year_ago]
+
+    top10_customer_cities = customer_order_last_year_df.groupby(by='customer_city').customer_unique_id.nunique().sort_values(ascending=False).reset_index().head(10)
     top10_customer_cities.rename(columns={'customer_unique_id': 'customer count'}, inplace=True)
 
     return top10_customer_cities
@@ -68,53 +129,124 @@ BASE_DIR = Path(__file__).resolve().parent
 
 DATA_DIR = BASE_DIR.parent / "data"
 
-orders_payments_merged_df = pd.read_csv(DATA_DIR / "orders_payments_merged_df.csv")
-orders_reviews_merged_df = pd.read_csv(DATA_DIR / "orders_reviews_merged_df.csv")
-products_reviews_df = pd.read_csv(DATA_DIR / "products_reviews_df.csv")
-customer_df = pd.read_csv(DATA_DIR / "olist_customers_dataset.csv")
+all_df = pd.read_csv(DATA_DIR / "all_df.csv")
 
-orders_reviews_relation =create_orders_reviews_merged_df(orders_reviews_merged_df)
-product_reviews_top10 = create_products_reviews_top10_df(products_reviews_df)
-products_reviews_bottom10 = create_products_reviews_bottom10_df(products_reviews_df)
-last_year_order = create_orders_payments_merged_df(orders_payments_merged_df)
-top10_customer_states = create_customer_states_df(customer_df)
-top10_customer_cities = create_customer_cities_df(customer_df)
+# SIDEBAR DATE INPUT
+
+min_date = all_df["order_purchase_timestamp"].min()
+max_date = all_df["order_purchase_timestamp"].max()
+
+with st.sidebar:
+    st.image(DATA_DIR / "ecommerce_6220945.png")
+
+    # Mengambil start_date & end_date dari date_input
+    start_date, end_date = st.date_input(
+        label='Rentang Waktu',min_value=min_date,
+        max_value=max_date,
+        value=[min_date, max_date]
+    )
+
+main_df = all_df[(all_df["order_purchase_timestamp"] >= pd.Timestamp(start_date)) & 
+                (all_df["order_purchase_timestamp"] <= pd.Timestamp(end_date))]
+
+orders_reviews_relation = create_orders_reviews_relation_df(main_df)
+product_reviews_top10 = create_products_reviews_top10_df(main_df)
+products_reviews_bottom10 = create_products_reviews_bottom10_df(main_df)
+last_year_order = create_last_year_order_df(main_df)
+top10_customer_states = create_customer_states_df(main_df)
+top10_customer_cities = create_customer_cities_df(main_df)
+
+# MAIN VIEW
 
 st.header('Olist Data Analysis Dashboard')
 
 st.subheader('Delivery Time vs Review Score')
 
-fig, ax = plt.subplots(figsize=(10, 5))
-ax.scatter(x=orders_reviews_relation['delivery_time (days)'], y=orders_reviews_relation['review_score'])
-ax.set_xlabel('Average Delivery Time (days)')
-ax.set_ylabel('Review Score')
-ax.set_title('Relationship between Delivery Time and Review Score')
+col1, col2 = st.columns(2)
+
+with col1:
+    highest_average_review_score = orders_reviews_relation['average_review_score'].max()
+    st.metric("Highest Average Review Score", value=round(highest_average_review_score, 2))
+
+with col2:
+    lowest_average_delivery_time = orders_reviews_relation['average_delivery_time (days)'].min()
+    st.metric("Lowest Average Delivery Time (days)", value=round(lowest_average_delivery_time, 2))
+
+col3, col4 = st.columns(2)
+
+with col3:
+    highest_average_review_score = orders_reviews_relation['average_review_score'].max()
+    st.metric("Highest Average Review Score", value=round(highest_average_review_score, 2))
+
+with col4:
+    lowest_average_delivery_time = orders_reviews_relation['average_delivery_time (days)'].min()
+    st.metric("Lowest Average Delivery Time (days)", value=round(lowest_average_delivery_time, 2))      
+
+fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(15, 5))
+ax[0].plot(orders_reviews_relation['order_purchase_timestamp'], orders_reviews_relation['average_review_score'])
+ax[0].set_xlabel('Month')
+ax[0].set_ylabel('Average Review Score')
+ax[0].set_title('Review Score Trend (1-5)')
+
+plt.plot(orders_reviews_relation['order_purchase_timestamp'], orders_reviews_relation['average_delivery_time (days)'])
+ax[1].set_xlabel('Month')
+ax[1].set_ylabel('Average Delivery Time')
+ax[1].set_title('Delivery Time Trend')
 st.pyplot(fig)
 
-st.subheader('Best and Worst Performing Product by Review Score')
+st.subheader('Best and Worst Performing Product by Total Order')
 
-fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(30, 15))
+col5, col6 = st.columns(2)
+
+with col5:
+    best_product = product_reviews_top10['most_purchased_product_category'][0]
+    best_product_total_orders = product_reviews_top10['total_orders'][0]
+    st.metric("Best Product", value=best_product)
+    st.metric("Total Orders", value=best_product_total_orders)
+
+with col6:
+    worst_product = products_reviews_bottom10['less_purchased_product_category'][0]
+    worst_product_total_orders = products_reviews_bottom10['total_orders'][0]
+    st.metric("Worst Product", value=worst_product)
+    st.metric("Total Orders", value=worst_product_total_orders)
+
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(24, 6))
 
 colors = ["#72BCD4", "#D3D3D3", "#D3D3D3", "#D3D3D3", "#D3D3D3"]
 
-sns.barplot(x="review_score", y="product_category_name", data=product_reviews_top10.head(10), palette=colors, ax=ax[0])
+# Prepare data for the first plot (Best Performing Products)
+sns.barplot(x="total_order", y="most_purchased_product_category", data=product_reviews_top10, palette=colors, ax=ax[0])
 ax[0].set_ylabel(None)
 ax[0].set_xlabel(None)
-ax[0].set_title("Best Performing Product", loc="center", fontsize=35)
-ax[0].tick_params(axis ='y', labelsize=25)
+ax[0].set_title("Most Purchased Products", loc="center", fontsize=15)
+ax[0].tick_params(axis ='y', labelsize=12)
 
-sns.barplot(x="review_score", y="product_category_name", data=products_reviews_bottom10.head(10), palette=colors, ax=ax[1])
+# Prepare data for the second plot (Worst Performing Products)
+sns.barplot(x="total_order", y="less_purchased_product_category", data=products_reviews_bottom10, palette=colors, ax=ax[1])
 ax[1].set_ylabel(None)
 ax[1].set_xlabel(None)
 ax[1].invert_xaxis()
 ax[1].yaxis.set_label_position("right")
 ax[1].yaxis.tick_right()
-ax[1].set_title("Worst Performing Product", loc="center", fontsize=35)
-ax[1].tick_params(axis='y', labelsize=25)
+ax[1].set_title("Less Purchased Products", loc="center", fontsize=15)
+ax[1].tick_params(axis='y', labelsize=12)
+
+plt.suptitle("Most and Less Purchased Product per Month", fontsize=20)
 
 st.pyplot(fig)
 
 st.subheader('Last Year Monthlty Revenue')
+
+col7, col8 = st.columns(2)
+
+with col7:
+    total_orders = last_year_order['order_count'].sum()
+    st.metric("Total Orders", value=total_orders)
+
+with col8:
+    total_revenue = last_year_order['revenue'].sum()
+    formatted_revenue = format_currency(total_revenue, 'BRL', locale='pt_BR')
+    st.metric("Total Revenue", value=formatted_revenue)
 
 fig, ax = plt.subplots(figsize=(20, 5))
 ax.plot(
@@ -130,7 +262,18 @@ ax.tick_params(axis='y', labelsize=15)
 
 st.pyplot(fig)
 
-st.subheader('Top 10 Customer States')
+st.subheader('Top 10 Customer States and Cities')
+
+col9, col10 = st.columns(2)
+
+with col9:
+    best_state = top10_customer_states['customer_state'][0]
+    st.metric("Best State", value=best_state)
+
+with col10:
+
+    best_city = top10_customer_cities['customer_city'][0]
+    st.metric("Best City", value=best_city)
 
 fig, ax = plt.subplots(figsize=(24, 6))
 
@@ -142,8 +285,6 @@ ax.set_xlabel(None)
 ax.set_title("Top 10 Customer States", loc="center", fontsize=15)
 ax.tick_params(axis ='y', labelsize=12)
 st.pyplot(fig)
-
-st.subheader('Top 10 Customer Cities')
 
 fig, ax = plt.subplots(figsize=(24, 6))
 
