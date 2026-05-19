@@ -196,6 +196,8 @@ plt.plot(orders_reviews_relation['order_purchase_timestamp'], orders_reviews_rel
 ax[1].set_xlabel('Month')
 ax[1].set_ylabel('Average Delivery Time')
 ax[1].set_title('Delivery Time Trend')
+
+st.tight_layout()
 st.pyplot(fig)
 
 st.subheader('Best and Worst Performing Product by Total Order')
@@ -204,13 +206,13 @@ col5, col6 = st.columns(2)
 
 with col5:
     best_product = product_reviews_top10['most_purchased_product_category'][0]
-    best_product_total_orders = product_reviews_top10['total_orders'][0]
+    best_product_total_orders = product_reviews_top10['total_order'][0]
     st.metric("Best Product", value=best_product)
     st.metric("Total Orders", value=best_product_total_orders)
 
 with col6:
     worst_product = products_reviews_bottom10['less_purchased_product_category'][0]
-    worst_product_total_orders = products_reviews_bottom10['total_orders'][0]
+    worst_product_total_orders = products_reviews_bottom10['total_order'][0]
     st.metric("Worst Product", value=worst_product)
     st.metric("Total Orders", value=worst_product_total_orders)
 
