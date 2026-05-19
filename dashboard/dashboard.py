@@ -133,6 +133,9 @@ LOGO_DIR = BASE_DIR.parent / "logo"
 all_df = pd.read_csv(DATA_DIR / "all_df.csv")
 
 # SIDEBAR DATE INPUT
+all_df["order_purchase_timestamp"] = pd.to_datetime(
+    all_df["order_purchase_timestamp"]
+)
 
 min_date = all_df["order_purchase_timestamp"].min()
 max_date = all_df["order_purchase_timestamp"].max()
