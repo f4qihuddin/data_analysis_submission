@@ -126,7 +126,7 @@ def create_customer_cities_df(df):
 
     return top10_customer_cities
 
-def rfm_df(df):
+def create_rfm_df(df):
     # Temukan tanggal terbaru dalam DataFrame
     latest_date = df['order_purchase_timestamp'].max()
 
@@ -239,6 +239,7 @@ products_reviews_bottom10 = create_products_reviews_bottom10_df(products_reviews
 last_year_order = create_last_year_order_df(orders_payments_merged_df_filtered)
 top10_customer_states = create_customer_states_df(orders_customers_df_filtered)
 top10_customer_cities = create_customer_cities_df(orders_customers_df_filtered)
+rfm_df = create_rfm_df(customer_order_payment_df_filtered)
 
 # MAIN VIEW
 
