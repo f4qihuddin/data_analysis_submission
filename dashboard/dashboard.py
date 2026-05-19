@@ -197,7 +197,7 @@ ax[1].set_xlabel('Month')
 ax[1].set_ylabel('Average Delivery Time')
 ax[1].set_title('Delivery Time Trend')
 
-st.tight_layout()
+plt.tight_layout()
 st.pyplot(fig)
 
 st.subheader('Best and Worst Performing Product by Total Order')
@@ -238,7 +238,7 @@ ax[1].set_title("Less Purchased Products", loc="center", fontsize=15)
 ax[1].tick_params(axis='y', labelsize=12)
 
 plt.suptitle("Most and Less Purchased Product per Month", fontsize=20)
-
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 st.pyplot(fig)
 
 st.subheader('Last Year Monthlty Revenue')
@@ -266,6 +266,7 @@ ax.set_title("Last Year Revenue", loc="center", fontsize=20)
 ax.tick_params(axis='x', labelsize=15)
 ax.tick_params(axis='y', labelsize=15)
 
+plt.tight_layout()
 st.pyplot(fig)
 
 st.subheader('Top 10 Customer States and Cities')
@@ -290,6 +291,8 @@ ax.set_ylabel(None)
 ax.set_xlabel(None)
 ax.set_title("Top 10 Customer States", loc="center", fontsize=15)
 ax.tick_params(axis ='y', labelsize=12)
+
+plt.tight_layout()
 st.pyplot(fig)
 
 fig, ax = plt.subplots(figsize=(24, 6))
@@ -301,5 +304,7 @@ ax.set_ylabel(None)
 ax.set_xlabel(None)
 ax.set_title("Top 10 Customer Cities", loc="center", fontsize=15)
 ax.tick_params(axis ='y', labelsize=12)
+
+plt.tight_layout()
 st.pyplot(fig)
 
