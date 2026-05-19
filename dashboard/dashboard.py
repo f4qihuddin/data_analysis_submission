@@ -173,14 +173,14 @@ with col1:
     st.metric("Highest Average Review Score", value=round(highest_average_review_score, 2))
 
 with col2:
-    lowest_average_delivery_time = orders_reviews_relation['average_delivery_time (days)'].min()
-    st.metric("Lowest Average Delivery Time (days)", value=round(lowest_average_delivery_time, 2))
+    highest_average_delivery_time = orders_reviews_relation['average_delivery_time (days)'].max()
+    st.metric("Highest Average Delivery Time (days)", value=round(highest_average_delivery_time, 2))
 
 col3, col4 = st.columns(2)
 
 with col3:
-    highest_average_review_score = orders_reviews_relation['average_review_score'].max()
-    st.metric("Highest Average Review Score", value=round(highest_average_review_score, 2))
+    lowest_average_review_score = orders_reviews_relation['average_review_score'].min()
+    st.metric("Lowest Average Review Score", value=round(lowest_average_review_score, 2))
 
 with col4:
     lowest_average_delivery_time = orders_reviews_relation['average_delivery_time (days)'].min()
