@@ -128,6 +128,7 @@ def create_customer_cities_df(df):
 BASE_DIR = Path(__file__).resolve().parent
 
 DATA_DIR = BASE_DIR.parent / "data"
+LOGO_DIR = BASE_DIR.parent / "logo"
 
 all_df = pd.read_csv(DATA_DIR / "all_df.csv")
 
@@ -137,7 +138,7 @@ min_date = all_df["order_purchase_timestamp"].min()
 max_date = all_df["order_purchase_timestamp"].max()
 
 with st.sidebar:
-    st.image(DATA_DIR / "ecommerce_6220945.png")
+    st.image(LOGO_DIR / "ecommerce_6220945.png")
 
     # Mengambil start_date & end_date dari date_input
     start_date, end_date = st.date_input(
