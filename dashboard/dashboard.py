@@ -297,8 +297,6 @@ with col6:
     st.metric("Worst Product", value=worst_product)
     st.metric("Total Orders", value=worst_product_total_orders)
 
-st.dataframe(product_reviews_top10)
-
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(24, 6))
 
 colors = ["#72BCD4", "#D3D3D3", "#D3D3D3", "#D3D3D3", "#D3D3D3"]
@@ -393,7 +391,7 @@ st.pyplot(fig)
 
 st.subheader('RFM Analysis')
 
-fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(10, 20))
+fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(10, 25))
 
 colors = ["#72BCD4",  "#72BCD4",  "#72BCD4",  "#72BCD4",  "#72BCD4"]
 
