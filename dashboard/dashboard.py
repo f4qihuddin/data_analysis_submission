@@ -52,7 +52,7 @@ def create_products_reviews_top10_df(df):
 
     product_reviews_top10 = product_reviews_top10.sort_values(by='order_purchase_timestamp', ascending=False)
 
-    total_top10_product_order = product_reviews_top10.groupby('most_purchased_product_category').total_order.sum().sort_values(by='total_order', ascending=False).reset_index()
+    total_top10_product_order = product_reviews_top10.groupby('most_purchased_product_category').total_order.sum().reset_index().sort_values(by='total_order', ascending=False).reset_index(drop=True)
     return total_top10_product_order
 
 def create_products_reviews_bottom10_df(df):
@@ -74,7 +74,7 @@ def create_products_reviews_bottom10_df(df):
 
     product_reviews_bottom10 = product_reviews_bottom10.sort_values(by='order_purchase_timestamp', ascending=False).head(12)
 
-    total_bottom10_product_order = product_reviews_bottom10.groupby('less_purchased_product_category').total_order.sum().sort_values(by='total_order', ascending=True).reset_index()
+    total_bottom10_product_order = product_reviews_bottom10.groupby('less_purchased_product_category').total_order.sum().reset_index().sort_values(by='total_order', ascending=True).reset_index(drop=True)
     return total_bottom10_product_order
 
 def create_last_year_order_df(df):
