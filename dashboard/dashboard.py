@@ -4,6 +4,7 @@ import seaborn as sns
 import streamlit as st
 from babel.numbers import format_currency
 import numpy as np
+from datetime import date
 sns.set_theme(style='dark')
 from pathlib import Path
 
@@ -212,11 +213,15 @@ with st.sidebar:
     st.image(LOGO_DIR / "ecommerce_6220945.png")
 
     # Mengambil start_date & end_date dari date_input
-    start_date, end_date = st.date_input(
-        label='Rentang Waktu',min_value=min_date,
+    date_input = st.date_input(
+        label='Rentang Waktu',
+        min_value=min_date,
         max_value=max_date,
-        value=[min_date, max_date]
+        value=[date(2017, 9, 1), max_date.date()]
     )
+    if len(date_input) != 2:
+        st.stop()
+    start_date, end_date = date_input
 
 customer_order_payment_df_filtered = customer_order_payment_df[(customer_order_payment_df["order_purchase_timestamp"] >= pd.Timestamp(start_date)) & 
                 (customer_order_payment_df["order_purchase_timestamp"] <= pd.Timestamp(end_date))]
@@ -266,6 +271,8 @@ with col3:
 with col4:
     lowest_average_delivery_time = orders_reviews_relation['average_delivery_time (days)'].min()
     st.metric("Lowest Average Delivery Time (days)", value=round(lowest_average_delivery_time, 2))      
+
+orders_reviews_relation = orders_reviews_relation.sort_values(by='order_purchase_timestamp', ascending=True)
 
 fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(15, 5))
 ax[0].plot(orders_reviews_relation['order_purchase_timestamp'], orders_reviews_relation['average_review_score'])
@@ -391,7 +398,7 @@ st.pyplot(fig)
 
 st.subheader('RFM Analysis')
 
-fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(10, 25))
+fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(10, 20))
 
 colors = ["#72BCD4",  "#72BCD4",  "#72BCD4",  "#72BCD4",  "#72BCD4"]
 
@@ -413,6 +420,6 @@ ax[2].set_xlabel(None)
 ax[2].set_title("By Monetary", loc="center", fontsize=18)
 ax[2].tick_params(axis='x', labelsize=15)
 
-plt.suptitle("Best Customer Based on RFM Parameters", fontsize=20, y=0.95)
-plt.tight_layout()
+plt.suptitle("Best Customer Based on RFM Parameters", fontsize=20)
+plt.tight_layout(rect=[0, 0, 1, 0.98])
 st.pyplot(fig)
